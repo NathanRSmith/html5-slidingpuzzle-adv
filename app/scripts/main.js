@@ -72,6 +72,8 @@ var NewGameBtnView = Backbone.View.extend({
 var SliderGameApp = Backbone.View.extend({
     rows: 4, cols: 4,
     initialize: function(options) {
+		var that = this;
+		
         this.collection = new SliderGameCollection({height: this.rows, width: this.cols})
         this.collection.generateRandomMatrix();
 
@@ -83,38 +85,79 @@ var SliderGameApp = Backbone.View.extend({
 			drawCellCallback: _.bind(this.drawCell, this),
         });
 		
+		$(document).keydown(function(e) {return that.arrowHandler(e);})
+		
 		this.listenTo(this.options.dispatcher, 'preNewGame', this.newGameHandler);
 		this.listenTo(this.options.dispatcher, 'cellClicked', this.clickHandler);
     },
+	arrowHandler: function(e) {
+		// check if key pressed is an arrow key
+		if(_.contains([37, 38, 39, 40], e.keyCode)) {
+			var emptyAddr = this.collection.findFirstEmptyCell().addr;
+			
+			switch(e.keyCode) {
+			// left
+			case 37:
+				cell = this.collection.at(emptyAddr[0], emptyAddr[1]+1);
+				if(cell !== undefined) {
+					this.shiftHorizontal(emptyAddr[0], cell.get('col'), emptyAddr[1]);
+				}
+				break;
+			// up
+			case 38:
+				cell = this.collection.at(emptyAddr[0]+1, emptyAddr[1]);
+				if(cell !== undefined) {
+					this.shiftVertical(emptyAddr[1], cell.get('row'), emptyAddr[0]);
+				}
+				break;
+			// right
+			case 39:
+				cell = this.collection.at(emptyAddr[0], emptyAddr[1]-1);
+				if(cell !== undefined) {
+					this.shiftHorizontal(emptyAddr[0], cell.get('col'), emptyAddr[1]);
+				}
+				break;
+			// down
+			case 40:
+				cell = this.collection.at(emptyAddr[0]-1, emptyAddr[1]);
+				if(cell !== undefined) {
+					this.shiftVertical(emptyAddr[1], cell.get('row'), emptyAddr[0]);
+				}
+				break;
+			}
+			
+			this.display.draw();
+		}
+	},
 	shiftCell: function(cell) {
 		var emptyAddr = this.collection.findFirstEmptyCell().addr;
 		if(cell.get('row') == emptyAddr[0]) {
 			this.shiftHorizontal(cell.get('row'), cell.get('col'), emptyAddr[1]);
 		} else if(cell.get('col') == emptyAddr[1]) {
-			this.shiftVertical(cell, emptyAddr[0]);
+			this.shiftVertical(cell.get('col'), cell.get('row'), emptyAddr[0]);
 		}
 	},
-	shiftHorizontal: function(row, targetCol, emptyCol) {
-		if(targetCol < emptyCol) {
-			// shift cells right (empty cell left)
-			for(var i=emptyCol; i>targetCol; i--) {
-				var tmp = this.collection.at(row, i-1);
-				tmp.set('col', i);
-				this.collection.setAddr(row, i, tmp);
-				this.collection.setAddr(row, i-1, null);
-			}
-		} else {
-			// shift cells left (empty cell right)
-			for(var i=emptyCol; i<targetCol; i++) {
-				var tmp = this.collection.at(row, i+1);
-				tmp.set('col', i);
-				this.collection.setAddr(row, i, tmp);
-				this.collection.setAddr(row, i+1, null);
-			}
-		}
-	},
-	shiftVertical: function(cell, emptyAddr) {
+	shiftHorizontal: function(idx, targetIdx, emptyIdx) {
+		var sign = targetIdx < emptyIdx ? -1 : 1;
 		
+		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
+			iIdx = emptyIdx+i*sign;
+			var tmp = this.collection.at(idx, iIdx+sign);
+			tmp.set('col', iIdx);
+			this.collection.setAddr(idx, iIdx, tmp);
+			this.collection.setAddr(idx, iIdx+sign, null);
+		}
+	},
+	shiftVertical: function(idx, targetIdx, emptyIdx) {
+		var sign = targetIdx < emptyIdx ? -1 : 1;
+		
+		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
+			iIdx = emptyIdx+i*sign;
+			var tmp = this.collection.at(iIdx+sign, idx);
+			tmp.set('row', iIdx);
+			this.collection.setAddr(iIdx, idx, tmp);
+			this.collection.setAddr(iIdx+sign, idx, null);
+		}
 	},
 	clickHandler: function(click) {
 		var cell = this.collection.at(click.row, click.col);

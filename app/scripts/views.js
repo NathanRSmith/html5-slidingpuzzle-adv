@@ -24,10 +24,10 @@ var CanvasDisplayView = Backbone.View.extend({
         var cellAddr = this.getCellAddressFromXY(pos.x, pos.y);
         if( cellAddr ) {
 
-            this.options.dispatcher.trigger('cellClicked', new Backbone.Model({
-                x: pos.x, y: pos.y,
+            this.options.dispatcher.trigger('cellClicked',{ 
+				x: pos.x, y: pos.y,
                 row: cellAddr.row, col: cellAddr.col
-            }));
+            });
         }
     },
     resizeHandler: function() {

@@ -14,7 +14,7 @@ var MatrixCollection = Backbone.Collection.extend({
     getHeight: function() { return this.options.height; },
     getWidth: function() { return this.options.width; },
     setAddr: function(row, col, val) {
-        this._matrix[row][col] = val;
+        this.models[row][col] = val;
     },
     _resetAllVisited: function() {
         this.each(function(cell) {
@@ -28,6 +28,29 @@ var MatrixCollection = Backbone.Collection.extend({
             }
         }
     },
+	find: function(callback) {
+        for(var i=0; i<this.getHeight(); i++) {
+            for(var j=0; j<this.getWidth(); j++) {
+                if(callback(this.at(i,j), [i,j], this.collection) == true) {
+                	return {cell: this.at(i,j), addr: [i, j]};
+                }
+            }
+        }
+		return undefined;
+	},
+	filter: function(callback) {
+		matches = []
+        for(var i=0; i<this.getHeight(); i++) {
+            for(var j=0; j<this.getWidth(); j++) {
+                if(callback(this.at(i,j), [i,j], this.collection) == true) {
+                	matches.push({cell: this.at(i,j), addr: [i, j]});
+                }
+            }
+        }
+		return matches;
+	},
+	findAllEmptyCells: function() { return this.filter(function(cell, addr) { return cell == null; }); },
+	findFirstEmptyCell: function() { return this.find(function(cell, addr) { return cell == null; }); },
     removeCell: function(cell) {
         this._matrix[cell.get('row')][cell.get('col')] = null;
     },

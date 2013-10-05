@@ -10,6 +10,9 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width">
         <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+		
+		<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+		<link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
         <!-- build:css(.tmp) styles/main.css -->
         <link rel="stylesheet" href="styles/main.css">
         <!-- endbuild -->
@@ -23,15 +26,17 @@
         <![endif]-->
 
 
-        <div class="hero-unit">
-          <h1>'Allo, 'Allo!</h1>
-          <p>You now have</p>
-          <ul>
-            <li>HTML5 Boilerplate</li>
-            <li>Modernizr</li>
+	    <div id="middle_column">
+	        <div class="relative-container">
+	            <canvas id="game_canvas"></canvas>
+	        </div>
+		</div>
+	    <div id="bottom_navbar" class="navbar navbar-fixed-bottom navbar-inverse">
+	        <button type="button" class="new-game btn btn-primary navbar-btn pull-left"><i class="icon-refresh"></i></button>
 
-          </ul>
-        </div>
+	        <a href="https://github.com/NathanRSmith/html5-slidingpuzzle" class="btn btn-dark navbar-btn pull-right"><i class="icon-code"></i></a>
+	    </div>
+
 
 
         <!-- build:js scripts/vendor.js -->
@@ -40,6 +45,7 @@
         <script src="bower_components/underscore/underscore.js"></script>
         <script src="bower_components/backbone/backbone.js"></script>
         <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+        <script src="bower_components/jcanvas/jcanvas.js"></script>
         <!-- endbower -->
         <!-- endbuild -->
 
@@ -54,6 +60,9 @@
         </script>
 
         <!-- build:js scripts/main.js -->
+		<script src="scripts/utils.js"></script>
+		<script src="scripts/models.js"></script>
+		<script src="scripts/views.js"></script>
         <script src="scripts/main.js"></script>
         <!-- endbuild -->
 </body>

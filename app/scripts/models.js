@@ -51,27 +51,3 @@ var MatrixCollection = Backbone.Collection.extend({
     },
 
 });
-
-
-var SliderGameCollection = MatrixCollection.extend({
-    modelClass: CellModel,
-    generateRandomMatrix: function() {
-        var nums = _.shuffle(_.range(0,16));
-        var mat = new Array(this.getHeight());
-        for(var i=0; i<this.getHeight(); i++) {
-            mat[i] = new Array(this.getWidth());
-            for(var j=0; j<this.getWidth(); j++) {
-                var num = nums[i*this.getWidth() + j]
-                if(num != 0) {
-                    mat[i][j] = new this.modelClass({
-                        row: i, col: j,
-                        value: num
-                    });
-                } else {
-                    mat[i][j] = null;
-                }
-            }
-        }
-        this.models = mat;
-    }
-});

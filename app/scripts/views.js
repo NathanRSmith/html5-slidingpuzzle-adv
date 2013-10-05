@@ -24,7 +24,7 @@ var CanvasDisplayView = Backbone.View.extend({
         var cellAddr = this.getCellAddressFromXY(pos.x, pos.y);
         if( cellAddr ) {
 
-            dispatcher.trigger('cellClicked', new Backbone.Model({
+            this.options.dispatcher.trigger('cellClicked', new Backbone.Model({
                 x: pos.x, y: pos.y,
                 row: cellAddr.row, col: cellAddr.col
             }));
@@ -108,7 +108,7 @@ var CanvasDisplayView = Backbone.View.extend({
     },
     _drawGameMatrix: function() {
         for(var i=0; i<this.options.rows; i++) {
-            for(var j=0; j<this.options.rows; j++) {
+            for(var j=0; j<this.options.cols; j++) {
                 var y = i*this._calculateCellHeight() + this.BBOX.miny;
                 var x = j*this._calculateCellWidth() + this.BBOX.minx;
                 this._drawCell(y, x, this.collection.at(i, j));

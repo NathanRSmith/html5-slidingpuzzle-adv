@@ -14,6 +14,65 @@ dispatcher = _.extend({}, Backbone.Events);
 
 var SliderGameCollection = MatrixCollection.extend({
     modelClass: CellModel,
+	shiftCell: function(cell) {
+		var emptyAddr = this.findFirstEmptyCell().addr;
+		if(cell.get('row') == emptyAddr[0]) {
+			this.shiftHorizontal(cell.get('row'), cell.get('col'), emptyAddr[1]);
+		} else if(cell.get('col') == emptyAddr[1]) {
+			this.shiftVertical(cell.get('col'), cell.get('row'), emptyAddr[0]);
+		}
+	},
+	shiftHorizontal: function(idx, targetIdx, emptyIdx) {
+		var sign = targetIdx < emptyIdx ? -1 : 1;
+		
+		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
+			iIdx = emptyIdx+i*sign;
+			var tmp = this.at(idx, iIdx+sign);
+			tmp.set('col', iIdx);
+			this.setAddr(idx, iIdx, tmp);
+			this.setAddr(idx, iIdx+sign, null);
+		}
+	},
+	shiftVertical: function(idx, targetIdx, emptyIdx) {
+		var sign = targetIdx < emptyIdx ? -1 : 1;
+		
+		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
+			iIdx = emptyIdx+i*sign;
+			var tmp = this.at(iIdx+sign, idx);
+			tmp.set('row', iIdx);
+			this.setAddr(iIdx, idx, tmp);
+			this.setAddr(iIdx+sign, idx, null);
+		}
+	},
+	shiftEmptyUp: function() {
+		var emptyAddr = this.findFirstEmptyCell().addr;
+		var cell = this.at(emptyAddr[0]-1, emptyAddr[1]);
+		if(cell !== undefined) {
+			this.shiftVertical(emptyAddr[1], cell.get('row'), emptyAddr[0]);
+		}
+	},
+	shiftEmptyDown: function() {
+		var emptyAddr = this.findFirstEmptyCell().addr;
+		var cell = this.at(emptyAddr[0]+1, emptyAddr[1]);
+		if(cell !== undefined) {
+			this.shiftVertical(emptyAddr[1], cell.get('row'), emptyAddr[0]);
+		}
+	},
+	shiftEmptyLeft: function() {
+		var emptyAddr = this.findFirstEmptyCell().addr;
+		var cell = this.at(emptyAddr[0], emptyAddr[1]-1);
+		if(cell !== undefined) {
+			this.shiftHorizontal(emptyAddr[0], cell.get('col'), emptyAddr[1]);
+		}
+	},
+	shiftEmptyRight: function() {
+		var emptyAddr = this.findFirstEmptyCell().addr;
+		var cell = this.at(emptyAddr[0], emptyAddr[1]+1);
+		if(cell !== undefined) {
+			this.shiftHorizontal(emptyAddr[0], cell.get('col'), emptyAddr[1]);
+		}
+	},
+	
     generateRandomMatrix: function() {
         var nums = _.shuffle(_.range(0,this.getHeight()*this.getWidth()));
         var mat = new Array(this.getHeight());
@@ -51,6 +110,33 @@ var SliderGameCollection = MatrixCollection.extend({
             }
         }
         this.models = mat;
+	},
+	generateSolvableMatrix: function() {
+		var that = this;
+		this.generateOrderedMatrix();
+		
+		// move empty cell to middle(ish)
+		this.shiftCell(this.at(this.getHeight()-1, Math.round(this.getWidth()/2)));
+		this.shiftCell(this.at(Math.round(this.getHeight()/2), Math.round(this.getWidth()/2)));
+		
+		// do 250 moves
+		_.times(250, function(n) {
+			var rand = _.random(0, 3);
+			switch(rand) {
+			case 0:
+				that.shiftEmptyUp();
+				break;
+			case 1:
+				that.shiftEmptyDown();
+				break;
+			case 2:
+				that.shiftEmptyLeft();
+				break;
+			case 3:
+				that.shiftEmptyRight();
+				break;
+			}
+		});
 	}
 });
 
@@ -75,7 +161,7 @@ var SliderGameApp = Backbone.View.extend({
 		var that = this;
 		
         this.collection = new SliderGameCollection({height: this.rows, width: this.cols})
-        this.collection.generateRandomMatrix();
+        this.collection.generateSolvableMatrix();
 
         this.display = new CanvasDisplayView({
 			el: this.el,
@@ -89,85 +175,68 @@ var SliderGameApp = Backbone.View.extend({
 		
 		this.listenTo(this.options.dispatcher, 'preNewGame', this.newGameHandler);
 		this.listenTo(this.options.dispatcher, 'cellClicked', this.clickHandler);
+		this.listenTo(this.options.dispatcher, 'moveMade', this.moveMadeHandler);
     },
 	arrowHandler: function(e) {
 		// check if key pressed is an arrow key
 		if(_.contains([37, 38, 39, 40], e.keyCode)) {
-			var emptyAddr = this.collection.findFirstEmptyCell().addr;
-			
 			switch(e.keyCode) {
 			// left
 			case 37:
-				cell = this.collection.at(emptyAddr[0], emptyAddr[1]+1);
-				if(cell !== undefined) {
-					this.shiftHorizontal(emptyAddr[0], cell.get('col'), emptyAddr[1]);
-				}
+				this.collection.shiftEmptyRight();
 				break;
 			// up
 			case 38:
-				cell = this.collection.at(emptyAddr[0]+1, emptyAddr[1]);
-				if(cell !== undefined) {
-					this.shiftVertical(emptyAddr[1], cell.get('row'), emptyAddr[0]);
-				}
+				this.collection.shiftEmptyDown();
 				break;
 			// right
 			case 39:
-				cell = this.collection.at(emptyAddr[0], emptyAddr[1]-1);
-				if(cell !== undefined) {
-					this.shiftHorizontal(emptyAddr[0], cell.get('col'), emptyAddr[1]);
-				}
+				this.collection.shiftEmptyLeft();
 				break;
 			// down
 			case 40:
-				cell = this.collection.at(emptyAddr[0]-1, emptyAddr[1]);
-				if(cell !== undefined) {
-					this.shiftVertical(emptyAddr[1], cell.get('row'), emptyAddr[0]);
-				}
+				this.collection.shiftEmptyUp();
 				break;
 			}
 			
 			this.display.draw();
-		}
-	},
-	shiftCell: function(cell) {
-		var emptyAddr = this.collection.findFirstEmptyCell().addr;
-		if(cell.get('row') == emptyAddr[0]) {
-			this.shiftHorizontal(cell.get('row'), cell.get('col'), emptyAddr[1]);
-		} else if(cell.get('col') == emptyAddr[1]) {
-			this.shiftVertical(cell.get('col'), cell.get('row'), emptyAddr[0]);
-		}
-	},
-	shiftHorizontal: function(idx, targetIdx, emptyIdx) {
-		var sign = targetIdx < emptyIdx ? -1 : 1;
-		
-		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
-			iIdx = emptyIdx+i*sign;
-			var tmp = this.collection.at(idx, iIdx+sign);
-			tmp.set('col', iIdx);
-			this.collection.setAddr(idx, iIdx, tmp);
-			this.collection.setAddr(idx, iIdx+sign, null);
-		}
-	},
-	shiftVertical: function(idx, targetIdx, emptyIdx) {
-		var sign = targetIdx < emptyIdx ? -1 : 1;
-		
-		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
-			iIdx = emptyIdx+i*sign;
-			var tmp = this.collection.at(iIdx+sign, idx);
-			tmp.set('row', iIdx);
-			this.collection.setAddr(iIdx, idx, tmp);
-			this.collection.setAddr(iIdx+sign, idx, null);
+			this.options.dispatcher.trigger('moveMade');
 		}
 	},
 	clickHandler: function(click) {
 		var cell = this.collection.at(click.row, click.col);
 		if(cell != null) {
-			this.shiftCell(cell);
+			this.collection.shiftCell(cell);
+			this.display.draw();
+			this.options.dispatcher.trigger('moveMade');
 		}
-		this.display.draw();
+	},
+	checkGameComplete: function() {
+		var that = this;
+		var n = 1;
+		var matches = true;
+		// bails out early if finds non-matching cell
+		this.collection.find(function(cell) {
+			if(n < that.rows*that.cols) {
+				if(cell == null) {
+					matches = false;
+					return true;
+				} else if(n != cell.get('value')) {
+					matches = false;
+					return true;
+				}
+			}
+			n++;
+		});
+		return matches;
+	},
+	moveMadeHandler: function() {
+		if(this.checkGameComplete()) {
+			alert('Game Complete!');
+		}
 	},
 	newGameHandler: function() {
-		this.collection.generateRandomMatrix();
+		this.collection.generateSolvableMatrix();
 		this.display._initializeCanvas();
 		this.display.draw();
 		

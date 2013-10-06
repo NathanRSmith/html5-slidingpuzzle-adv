@@ -12,6 +12,7 @@ module.exports = function (grunt) {
     require('time-grunt')(grunt);
     // load all grunt tasks
     require('load-grunt-tasks')(grunt);
+	grunt.loadNpmTasks('grunt-gh-pages');
 
     grunt.initConfig({
         // configurable paths
@@ -292,7 +293,13 @@ module.exports = function (grunt) {
                 'svgmin',
                 'htmlmin'
             ]
-        }
+        },
+		'gh-pages': {
+			options: {
+				base: 'dist'
+			},
+			src: ['**']
+		}
     });
 
     grunt.registerTask('server', function (target) {

@@ -266,3 +266,7 @@ var SliderGameApp = Backbone.View.extend({
 
 game = new SliderGameApp({el: '#game_canvas', dispatcher: dispatcher});
 newGameBtnView = new NewGameBtnView({el: '.new-game', dispatcher: dispatcher});
+
+$(document).ready(function() {
+	FastClick.attach(document.body);
+});

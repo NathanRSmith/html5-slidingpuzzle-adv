@@ -3,7 +3,7 @@ var CanvasDisplayView = Backbone.View.extend({
     _CELL_PADDING: 2,
     resizeTimeout: null,
     events: {
-        'click': '_clickHandler'
+        'click': '_clickHandler',
     },
     initialize: function(options) {
 		var that = this;

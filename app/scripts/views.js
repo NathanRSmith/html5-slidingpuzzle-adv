@@ -60,6 +60,7 @@ var CanvasDisplayView = Backbone.View.extend({
     draw: function() {
         this._drawBackground();
         this._drawGameMatrix();
+		this._drawExtra();
     },
     _calculateCanvasSize: function() {
         var height = this.options.rows*this._calculateCellHeight();
@@ -131,4 +132,9 @@ var CanvasDisplayView = Backbone.View.extend({
         	}
         }
     },
+	_drawExtra: function() { 
+		if(this.options.drawExtraCallback != undefined) {
+			this.options.drawExtraCallback(this);
+		}
+	}
 });

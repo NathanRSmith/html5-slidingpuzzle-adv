@@ -14,6 +14,7 @@ dispatcher = _.extend({}, Backbone.Events);
 
 var SliderGameCollection = MatrixCollection.extend({
     modelClass: CellModel,
+	barriers: new Backbone.Collection(),
 	shiftCell: function(cell) {
 		var emptyAddr = this.findFirstEmptyCell().addr;
 		if(cell.get('row') == emptyAddr[0]) {
@@ -27,10 +28,32 @@ var SliderGameCollection = MatrixCollection.extend({
 		
 		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
 			iIdx = emptyIdx+i*sign;
+			
+			this._processVerticalBarriers(this.at(idx, iIdx+sign), iIdx+sign, iIdx);
+			
 			var tmp = this.at(idx, iIdx+sign);
 			tmp.set('col', iIdx);
 			this.setAddr(idx, iIdx, tmp);
 			this.setAddr(idx, iIdx+sign, null);
+		}
+	},
+	_processVerticalBarriers: function(cell, fromCol, toCol) {
+		// Check if the cell being moved crosses a barrier
+		var barrier = this.barriers.find(function(barrier) {
+			// only processing vertical barriers currently
+			if(barrier.get('orientation') != 'v') return false;
+			// only if rows match
+			if(barrier.get('row') != cell.get('row')) return false;
+			
+			// if moving to right
+			if( toCol>fromCol && fromCol==barrier.get('col') ) return true;
+			// if moving to left
+			if( toCol<fromCol && toCol==barrier.get('col') ) return true;
+		});
+		if(barrier) {
+			// flip the state since there is currently only one type of barrier
+			// TODO: Fix for multiple barrier types
+			cell.set('state', (!cell.get('state'))*1);
 		}
 	},
 	shiftVertical: function(idx, targetIdx, emptyIdx) {
@@ -38,10 +61,32 @@ var SliderGameCollection = MatrixCollection.extend({
 		
 		for(var i=0; i<Math.abs(targetIdx-emptyIdx); i++) {
 			iIdx = emptyIdx+i*sign;
+			
+			this._processHorizontalBarriers(this.at(iIdx+sign, idx), iIdx+sign, iIdx);
+			
 			var tmp = this.at(iIdx+sign, idx);
 			tmp.set('row', iIdx);
 			this.setAddr(iIdx, idx, tmp);
 			this.setAddr(iIdx+sign, idx, null);
+		}
+	},
+	_processHorizontalBarriers: function(cell, fromRow, toRow) {
+		// Check if the cell being moved crosses a barrier
+		var barrier = this.barriers.find(function(barrier) {
+			// only processing vertical barriers currently
+			if(barrier.get('orientation') != 'h') return false;
+			// only if rows match
+			if(barrier.get('col') != cell.get('col')) return false;
+			
+			// if moving to right
+			if( toRow>fromRow && fromRow==barrier.get('row') ) return true;
+			// if moving to left
+			if( toRow<fromRow && toRow==barrier.get('row') ) return true;
+		});
+		if(barrier) {
+			// flip the state since there is currently only one type of barrier
+			// TODO: Fix for multiple barrier types
+			cell.set('state', (!cell.get('state'))*1);
 		}
 	},
 	shiftEmptyUp: function() {
@@ -83,7 +128,8 @@ var SliderGameCollection = MatrixCollection.extend({
                 if(num != 0) {
                     mat[i][j] = new this.modelClass({
                         row: i, col: j,
-                        value: num
+                        value: num,
+						state: 0,
                     });
                 } else {
                     mat[i][j] = null;
@@ -101,7 +147,8 @@ var SliderGameCollection = MatrixCollection.extend({
                 if(num != this.getHeight()*this.getWidth()) {
                     mat[i][j] = new this.modelClass({
                         row: i, col: j,
-                        value: num
+                        value: num,
+						state: 0,
                     });
                 } else {
                     mat[i][j] = null;
@@ -120,7 +167,7 @@ var SliderGameCollection = MatrixCollection.extend({
 		this.shiftCell(this.at(Math.round(this.getHeight()/2), Math.round(this.getWidth()/2)));
 		
 		// do 250 moves
-		_.times(250, function(n) {
+		_.times(500, function(n) {
 			var rand = _.random(0, 3);
 			switch(rand) {
 			case 0:
@@ -160,7 +207,14 @@ var SliderGameApp = Backbone.View.extend({
     initialize: function(options) {
 		var that = this;
 		
-        this.collection = new SliderGameCollection({height: this.rows, width: this.cols})
+        this.collection = new SliderGameCollection({height: this.rows, width: this.cols});
+		
+		// initiate barriers
+		this.collection.barriers.add({row: 0, col: 1, orientation: 'v', type: 1});
+		this.collection.barriers.add({row: 1, col: 0, orientation: 'h', type: 1});
+		
+		
+		
         this.collection.generateSolvableMatrix();
 
         this.display = new CanvasDisplayView({
@@ -169,6 +223,7 @@ var SliderGameApp = Backbone.View.extend({
 			dispatcher: this.options.dispatcher,
             rows: this.rows, cols: this.cols,
 			drawCellCallback: _.bind(this.drawCell, this),
+			drawExtraCallback: _.bind(this.drawExtra, this),
         });
 		
 		$(document).keydown(function(e) {return that.arrowHandler(e);})
@@ -224,6 +279,9 @@ var SliderGameApp = Backbone.View.extend({
 				} else if(n != cell.get('value')) {
 					matches = false;
 					return true;
+				} else if(0 != cell.get('state')) {
+					matches = false;
+					return true;
 				}
 			}
 			n++;
@@ -249,6 +307,20 @@ var SliderGameApp = Backbone.View.extend({
             width: d._CELL_WIDTH, height: d._CELL_HEIGHT,
             fromCenter: false
 		});
+		
+		switch(cell.get('state')) {
+		case 1:
+			d.$el.drawArc({
+				fillStyle: '#888',
+				strokeStyle: '#000',
+				strokeWidth: 1,
+				x: x+d._calculateCellWidth()/2, y: y+d._calculateCellHeight()/2,
+				radius: .8*(d._calculateCellWidth()/2),
+				fromCenter: true
+			});
+			break;
+		}
+		
 		d.$el.drawText({
 			fillStyle: "#9cf",
 			strokeStyle: "#25a",
@@ -258,6 +330,41 @@ var SliderGameApp = Backbone.View.extend({
 			fontFamily: "Verdana, sans-serif",
 			fromCenter: true,
 			text: cell.get('value').toString()
+		});
+	},
+	drawExtra: function(d) {
+		this.collection.barriers.each(function(barrier) {
+			// assume vertical first, then flip if not
+			var x = (barrier.get('col')+1)*d._calculateCellWidth();
+			var y = barrier.get('row')*d._calculateCellHeight() + d._calculateCellHeight()/2;
+			var height = d._calculateCellHeight();
+			var width = 6*d._CELL_PADDING;
+			
+			if(barrier.get('orientation') == 'h') {
+				// var tmp=x;
+// 				x=y;
+// 				y=tmp;
+				x -= d._calculateCellWidth()/2;
+				y += d._calculateCellHeight()/2
+				tmp=height;
+				height=width;
+				width=tmp;
+			}
+			
+			switch(barrier.get('type')) {
+			case 1:
+				d.$el.drawRect({
+					fillStyle: '#888',
+					strokeStyle: '#333',
+					strokeWidth: '2',
+					x: x+d.BBOX.minx, y: y+d.BBOX.miny, 
+					width: width, height: height,
+					fromCenter: true
+				});
+				break;
+			}
+			
+			
 		});
 	}
 });

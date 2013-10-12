@@ -15,6 +15,33 @@ dispatcher = _.extend({}, Backbone.Events);
 var SliderGameCollection = MatrixCollection.extend({
     modelClass: CellModel,
 	barriers: new Backbone.Collection(),
+	addRandomBarriers: function(n, orientation, type) {
+		var that = this;
+		_.times(n, function() {
+			var valid = false;
+			var row;
+			var col;
+			var maxrow = this.options.height-1;
+			var maxcol = this.options.width-1;
+			if(orientation=='v') {
+				maxcol -= 1;
+			} else {
+				maxrow -= 1;
+			}
+			
+			while(valid == false) {
+				row = _.random(0, maxrow);
+				col = _.random(0, maxcol);
+				valid = this.barriers.findWhere({
+					row: row, col: col,
+					orientation: orientation
+				}) == undefined;
+			}
+			
+			this.barriers.add({row: row, col: col, orientation: orientation, type: 1});
+			
+		}, this);
+	},
 	shiftCell: function(cell) {
 		var emptyAddr = this.findFirstEmptyCell().addr;
 		if(cell.get('row') == emptyAddr[0]) {
@@ -210,8 +237,11 @@ var SliderGameApp = Backbone.View.extend({
         this.collection = new SliderGameCollection({height: this.rows, width: this.cols});
 		
 		// initiate barriers
-		this.collection.barriers.add({row: 0, col: 1, orientation: 'v', type: 1});
-		this.collection.barriers.add({row: 1, col: 0, orientation: 'h', type: 1});
+		// this.collection.barriers.add({row: 0, col: 1, orientation: 'v', type: 1});
+		// this.collection.barriers.add({row: 1, col: 0, orientation: 'h', type: 1});
+		
+		this.collection.addRandomBarriers(2, 'v', 1);
+		this.collection.addRandomBarriers(2, 'h', 1);
 		
 		
 		
@@ -295,6 +325,9 @@ var SliderGameApp = Backbone.View.extend({
 	},
 	newGameHandler: function() {
 		this.collection.generateSolvableMatrix();
+		this.collection.barriers.reset();
+		this.collection.addRandomBarriers(2, 'v', 1);
+		this.collection.addRandomBarriers(2, 'h', 1);
 		this.display._initializeCanvas();
 		this.display.draw();
 		

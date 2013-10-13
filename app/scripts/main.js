@@ -15,6 +15,10 @@ dispatcher = _.extend({}, Backbone.Events);
 var SliderGameCollection = MatrixCollection.extend({
     modelClass: CellModel,
 	barriers: new Backbone.Collection(),
+	generateBarriersFromSettings: function(settings) {
+		this.addRandomBarriers(settings.horizontal, 'h', 1);
+		this.addRandomBarriers(settings.vertical, 'v', 1);
+	},
 	addRandomBarriers: function(n, orientation, type) {
 		var that = this;
 		_.times(n, function() {
@@ -239,9 +243,9 @@ var SliderGameApp = Backbone.View.extend({
 		// initiate barriers
 		// this.collection.barriers.add({row: 0, col: 1, orientation: 'v', type: 1});
 		// this.collection.barriers.add({row: 1, col: 0, orientation: 'h', type: 1});
-		
-		this.collection.addRandomBarriers(2, 'v', 1);
-		this.collection.addRandomBarriers(2, 'h', 1);
+		// this.collection.addRandomBarriers(2, 'v', 1);
+		// this.collection.addRandomBarriers(2, 'h', 1);
+		this.collection.generateBarriersFromSettings(this.options.settings.get('barriers'));
 		
 		
 		
@@ -324,10 +328,9 @@ var SliderGameApp = Backbone.View.extend({
 		}
 	},
 	newGameHandler: function() {
-		this.collection.generateSolvableMatrix();
 		this.collection.barriers.reset();
-		this.collection.addRandomBarriers(2, 'v', 1);
-		this.collection.addRandomBarriers(2, 'h', 1);
+		this.collection.generateBarriersFromSettings(this.options.settings.get('barriers'));
+		this.collection.generateSolvableMatrix();
 		this.display._initializeCanvas();
 		this.display.draw();
 		
@@ -403,10 +406,73 @@ var SliderGameApp = Backbone.View.extend({
 });
 
 
+var SettingsView = Backbone.View.extend({
+	el: '#settings',
+	events: {
+		'change input[type=range]': '_rangeChangeHandler',
+		'change #total_barriers>input[type=range]': '_totalBarriersChangeHandler',
+		'change #horizontal_barriers>input[type=range]': '_horizontalBarriersChangeHandler',
+		'change #vertical_barriers>input[type=range]': '_verticalBarriersChangeHandler',
+		'click #update_settings': '_updateSettingsClickHandler'
+	},
+	initialize: function(options) {
+		this.tr = this.$('#total_barriers>input[type=range]');
+		this.hr = this.$('#horizontal_barriers>input[type=range]');
+		this.vr = this.$('#vertical_barriers>input[type=range]');
+		
+		var settings = this.options.settings.get('barriers');
+		settings.total = (game.rows*game.rows-game.rows)+(game.cols*game.cols-game.cols);
+		this.options.settings.set('barriers', settings);
+		this.tr.attr('max', this.options.settings.get('barriers').total);
+	},
+	getSettings: function() { return this.settings; },
+	_valel: function(jqel) {
+		return jqel.parent().find('.range-value');
+	},
+	_rangeChangeHandler: function(e) {
+		this._valel($(e.currentTarget)).text($(e.currentTarget).val());
+	},
+	_totalBarriersChangeHandler: function(e) {
+		var val = parseInt(this.tr.val());
+		
+		this.hr.attr('max', Math.min(val, (game.rows*game.rows-game.rows)));
+		this.hr.val(Math.round(val/2));
+		this._valel(this.hr).text(this.hr.val());
+		this.vr.attr('max', Math.min(val, (game.cols*game.cols-game.cols)));
+		this.vr.val(val-Math.round(val/2));
+		this._valel(this.vr).text(this.vr.val());
+	},
+	_horizontalBarriersChangeHandler: function(e) {
+		this.vr.val(this.tr.val()-this.hr.val());
+		this._valel(this.vr).text(this.vr.val());
+	},
+	_verticalBarriersChangeHandler: function(e) {
+		this.hr.val(this.tr.val()-this.vr.val());
+		this._valel(this.hr).text(this.hr.val());
+	},
+	_updateSettingsClickHandler: function() {
+		this.options.settings.set('barriers', {
+			'total': parseInt(this.tr.val()),
+			'horizontal': parseInt(this.hr.val()),
+			'vertical': parseInt(this.vr.val())
+		});
+		this.options.dispatcher.trigger('preNewGame');
+	},
+})
 
-game = new SliderGameApp({el: '#game_canvas', dispatcher: dispatcher});
-newGameBtnView = new NewGameBtnView({el: '.new-game', dispatcher: dispatcher});
+
+settings = new Backbone.Model({
+	'barriers': {
+		'total': 4,
+		'horizontal': parseInt(2),
+		'vertical': parseInt(2)
+	}
+});
+game = new SliderGameApp({el: '#game_canvas', dispatcher: dispatcher, settings: settings});
+newGameBtnView = new NewGameBtnView({el: '.new-game', dispatcher: dispatcher, settings: settings});
+settingsView = new SettingsView({dispatcher: dispatcher, settings: settings});
 
 $(document).ready(function() {
 	FastClick.attach(document.body);
+	$('#settings').modal('show');
 });

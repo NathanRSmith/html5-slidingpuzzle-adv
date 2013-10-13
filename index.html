@@ -14,7 +14,7 @@
 		
 		<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
 		<link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
-        <link rel="stylesheet" href="styles/633b47aa.main.css">
+        <link rel="stylesheet" href="styles/1d4952b4.main.css">
         <script src="scripts/vendor/f7f27360.modernizr.js"></script>
     </head>
     <body>
@@ -29,10 +29,46 @@
 	        </div>
 		</div>
 	    <div id="bottom_navbar" class="navbar navbar-fixed-bottom navbar-inverse">
-	        <button type="button" class="new-game btn btn-primary navbar-btn pull-left"><i class="icon-refresh"></i></button>
+	        <button type="button" class="new-game btn btn-primary navbar-btn pull-left btn-icon"><i class="icon-refresh"></i></button>
+			<a data-toggle="modal" href="#settings" class="btn btn-primary navbar-btn btn-icon"><i class="icon-cog"></i></a>
 
-	        <a href="https://github.com/NathanRSmith/html5-slidingpuzzle" class="btn btn-dark navbar-btn pull-right"><i class="icon-code"></i></a>
+	        <a href="https://github.com/NathanRSmith/html5-slidingpuzzle-adv" class="btn btn-dark navbar-btn btn-icon pull-right"><i class="icon-code"></i></a>
 	    </div>
+		
+		<!-- Modal -->
+		<div class="modal fade" id="settings" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+						<h4 class="modal-title">
+							Game Settings
+						</h4>
+					</div>
+					<div class="modal-body">
+						<div id="barrier_settings">
+							<div id="total_barriers">
+								<h4>Total Number of Barriers (<span class="range-value">4</span>)</h4>
+								<input type="range" min="0" max="8" value="4">
+							</div>
+							<div class="subfield" id="horizontal_barriers">
+								<h5>Number of Horizontal Barriers (<span class="range-value">2</span>)</h5>
+								<input type="range" min="0" max="4" value="2">
+							</div>
+							<div class="subfield" id="vertical_barriers">
+								<h5>Number of Vertical Barriers (<span class="range-value">2</span>)</h5>
+								<input type="range" min="0" max="4" value="2">
+							</div>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button id="reset_settings" type="button" class="btn btn-default" data-dismiss="modal">Reset To Default</button> 
+						<button id="update_settings" type="button" class="btn btn-primary" data-dismiss="modal">Update Settings</button>
+					</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+
 
 
 
@@ -48,6 +84,6 @@
             ga('create','UA-44813835-1');ga('send','pageview');
         </script>
 
-        <script src="scripts/0cda9463.main.js"></script>
+        <script src="scripts/c2c5c3db.main.js"></script>
 </body>
 </html>

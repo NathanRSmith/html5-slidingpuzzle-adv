@@ -40,6 +40,10 @@ body {
 }
 #game_canvas {}
 
+#barrier_settings input[type=range] {
+	width: 100%;
+}
+
 
 
 #bottom_navbar {
